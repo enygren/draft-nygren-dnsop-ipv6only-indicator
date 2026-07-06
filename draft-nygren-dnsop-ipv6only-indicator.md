@@ -1,5 +1,5 @@
 ---
-title: Indicating IPv6-only SVCB Service Endpoints and IPv4 Deprecation in the DNS
+title: Indicating IPv6-only SVCB Endpoints and IPv4 Deprecation in the DNS
 abbrev: ipv6only and deprecated SvcParams
 docname: draft-nygren-dnsop-ipv6only-indicator-latest
 date: {DATE}
@@ -56,17 +56,17 @@ available there.  The authors (gratefully) accept pull requests.
 
 # Introduction
 
-This specification introduces the `ipv6only` and `deprecated` SvcParamKeys to allow service providers to indicate that preferred Service Endpoints are IPv6-only and that legacy IPv4-supporting Service Endpoints are deprecated and will be retired.
+This specification introduces the `ipv6only` and `deprecated` SvcParamKeys to allow service providers to indicate that preferred Alternative Endpoints are IPv6-only and that legacy IPv4-supporting Alternative Endpoints are deprecated and will be retired.
 
 As part of the multi-decade transition from IPv4 to IPv6 ({{?RFC8200}}) there is a desire to phase out support for providing services over IPv4. This involves switching from the long-standing assumption that all services are available over IPv4 or dual-stack IPv4+IPv6 to instead being _only_ available over IPv6. As clients lacking IPv6 connectivity will not be able to access IPv6-only resources, there will be a transitional phase where service providers will want to indicate that legacy endpoints supporting IPv4 are deprecated and will go away at some point.
 
 For example, the government of Czechia has set an end-date after which government services may only be provided over IPv6 {{KONECIPV4}}. Leading up to this, there will be a need to signal that the IPv6-only services are preferred and that legacy IPv4-supporting services are deprecated.
 
-In {{!SVCB=RFC9460}}, the SVCB ("Service Binding") and HTTPS DNS RR types are specified to provide clients with complete instructions for accessing a service. Individual service bindings (SVCB RRs) describe Service Endpoints and their properties and relative priorities.
+In {{!SVCB=RFC9460}}, the SVCB ("Service Binding") and HTTPS DNS RR types are specified to provide clients with complete instructions for accessing a service. Individual service bindings (SVCB RRs) describe Alternative Endpoints and their properties and relative priorities.
 
-By adding the `ipv6only` and `deprecated` SvcParamKeys, individual Service Endpoints can be annotated to indicate their IPv6-only and deprecated nature to clients. It is expected that the `deprecated` SvcParamKey may also be used for other future purposes.
+By adding the `ipv6only` and `deprecated` SvcParamKeys, individual Alternative Endpoints can be annotated to indicate their IPv6-only and deprecated nature to clients. It is expected that the `deprecated` SvcParamKey may also be used for other future purposes.
 
-As an example, the following provides two Service Endpoints for `www.example.com`. The preferred endpoint of `modern.example.com` (the one with the lowest SvcPriority) is listed as `ipv6only`. An additional Service Endpoint of `legacy.example.com` is also available but is listed as `deprecated`. The optional use of `mandatory=ipv6only` will cause clients not understanding the new `ipv6only` SvcParamKey to ignore the modern IPv6-only endpoint and skip directly to the legacy endpoint.
+As an example, the following provides two Alternative Endpoints for `www.example.com`. The preferred endpoint of `modern.example.com` (the one with the lowest SvcPriority) is listed as `ipv6only`. An additional Alternative Endpoint of `legacy.example.com` is also available but is listed as `deprecated`. The optional use of `mandatory=ipv6only` will cause clients not understanding the new `ipv6only` SvcParamKey to ignore the modern IPv6-only endpoint and skip directly to the legacy endpoint.
 
 ~~~ dns
     www.example.com. 300 IN HTTPS 1 modern.example.com. (
@@ -83,29 +83,29 @@ As an example, the following provides two Service Endpoints for `www.example.com
 
 Terminology used in this specification includes:
 
-* `Service Endpoint`: a ServiceMode SVCB (or SVCB-compatible) DNS RR ({{!SVCB=RFC9460}}) that specifies how to access a service.
+* `Alternative Endpoint`: a ServiceMode SVCB (or SVCB-compatible) DNS RR ({{!SVCB=RFC9460}}) that specifies how to access a service.
 
 Additional DNS terminology intends to be consistent with {{?DNSTerm=RFC9499}}.
 
 
 # The "ipv6only" SvcParamKey {#ipv6only}
 
-The `ipv6only` SvcParamKey indicates that the associated Service Endpoint is only available over IPv6. It takes no value.
+The `ipv6only` SvcParamKey indicates that the associated Alternative Endpoint is only available over IPv6. It takes no value.
 
 With `ipv6only`, the presentation and wire format values MUST be
 empty.
 
-To be "self-consistent" (see {{SVCB}} Section 2.4.3), the `ipv6only` and `ipv4hint` SvcParamKeys SHOULD NOT be included in the same SVCB RR. When `ipv6only` is present, the `ipv4hint` SvcParam MUST be ignored by clients.
+The `ipv6only` and `ipv4hint` SvcParamKeys SHOULD NOT be included in the same SVCB RR. When `ipv6only` is present, the `ipv4hint` SvcParam MUST be ignored by clients. Clients MAY determine that SVCB RRs with both `ipv6only` and `ipv4hint` SvcParams are NOT "self-consistent" accordingly ignore them per {{SVCB}} Section 2.4.3.
 
 ## Client behavior for "ipv6only" {#ipv6only-client-behavior}
 
 Clients implementing the `ipv6only` SvcParamKey do the following when encountering a SVCB RR with this SvcParam, as a modification to the algorithm specified in {{SVCB}} Section 3:
 
-1. Clients SHOULD NOT perform a `A` DNS lookup for an IPv4 address for the TargetName. (It is possible that clients already performed the `A` lookup or have one in their DNS cache, in which case it MUST be ignored.)
-2. Clients MUST only attempt to connect to the Service Endpoint over IPv6 and MUST NOT attempt to connect to the Service Endpoint over IPv4.
-3. Clients who are certain that they have no IPv6 connectivity SHOULD treat this Service Endpoint as "not compatible" ({{SVCB}} Section 3) and not include it in their candidate list.
+1. Clients SHOULD NOT perform an `A` DNS lookup for an IPv4 address for the TargetName. (It is possible that clients already performed the `A` lookup or have one in their DNS cache, in which case it MUST be ignored.)
+2. Clients MUST only attempt to connect to the Alternative Endpoint over IPv6 and MUST NOT attempt to connect to the Alternative Endpoint over IPv4.
+3. Clients who are certain that they have no IPv6 connectivity SHOULD treat this Alternative Endpoint as not "compatible" ({{SVCB}} Section 8) and not include it in their candidate list.
 
-If the only Service Endpoints available have `ipv6only`, and if the service has no DNS `A` record, the Client MAY present the user with a notice that the service is only available over IPv6 and that the user lacks IPv6 connectivity.
+If the only Alternative Endpoints available have `ipv6only`, and if the service has no DNS `A` record, the Client MAY present the user with a notice that the service is only available over IPv6 and that the user lacks IPv6 connectivity.
 
 _(TODO: determine if "updates: 9460" is needed.)_
 
@@ -115,16 +115,16 @@ _(TODO: determine if "updates: 9460" is needed.)_
 Clients using a domain-oriented transport proxy like HTTP CONNECT
 ({{!RFC9110}}) or SOCKS5 ({{!RFC1928}}) with named destinations may not know if their proxy supports IPv6 or only IPv4.
 
-Clients lacking information about whether a Proxy supports IPv6 SHOULD opportunistically use Service Endpoints with `ipv6only`, but MUST retry with subsequent Service Endpoints if this fails. Clients MAY use the {{?RFC9209}} `Proxy-Status` response header field to get an indication that a proxy is unable to reach a given target over IPv6 (such as looking for regular occurrences of `error=destination_ip_unroutable`) but MUST NOT extrapolate this to general IPv6 unreachability from the Proxy absent some other explicit signal.
+Clients lacking information about whether a Proxy supports IPv6 SHOULD opportunistically use Alternative Endpoints with `ipv6only`, but MUST retry with subsequent Alternative Endpoints if this fails. Clients MAY use the {{?RFC9209}} `Proxy-Status` response header field to get an indication that a proxy is unable to reach a given target over IPv6 (such as looking for regular occurrences of `error=destination_ip_unroutable`) but MUST NOT extrapolate this to general IPv6 unreachability from the Proxy absent some other explicit signal.
 
 
 # The "deprecated" SvcParamKey {#deprecated}
 
-The `deprecated` SvcParamKey indicates that the associated Service Endpoint is deprecated. It takes an optional value with a freeform textual deprecation reason.
+The `deprecated` SvcParamKey indicates that the associated Alternative Endpoint is deprecated. It takes an optional value with a freeform textual deprecation reason.
 
 This text is NOT intended for automated processing, and clients MUST NOT alter their connection behavior on the basis of its content beyond treating the mere presence of the "deprecated" key as advisory.
 
-The `deprecated` SvcParam SHOULD always be on the lowest priority Service Endpoints.
+The `deprecated` SvcParam SHOULD always be on the lowest priority Alternative Endpoints.
 
 ## Presentation Format for "deprecated"
 
@@ -153,24 +153,24 @@ Implementations MUST NOT assume any particular character encoding beyond UTF-8, 
 
 The `deprecated` indicator is intended for operational uses and is not intended to substantively impact general end-user behavior.
 
-Clients SHOULD NOT provide special treatment to Service Endpoints due to the presence of `deprecated`.
+Clients SHOULD NOT provide special treatment to Alternative Endpoints due to the presence of `deprecated`.
 
-Clients MAY provide an indicator and SHOULD log a warning when using a Service Endpoint with `deprecated`.
+Clients MAY provide an indicator and SHOULD log a warning when using a Alternative Endpoint with `deprecated`.
 
 
 # Operational Usage
 
 A typical operational workflow for using this will involve moving through a deprecation process of:
 
-1) Introducing both the ipv6only Service Endpoint and marking the legacy Service Endpoint as deprecated.
-2) Removing the deprecated endpoint, leaving only the `ipv6only` Service Endpoint.
+1) Introducing both the ipv6only Alternative Endpoint and marking the legacy Alternative Endpoint as deprecated.
+2) Removing the deprecated endpoint, leaving only the `ipv6only` Alternative Endpoint.
 
 ## Step One: Indicating Deprecation
 
-In the first step, the service is configured with at least two ServiceMode Service Endpoints:
+In the first step, the service is configured with at least two ServiceMode Alternative Endpoints:
 
-* The higher priority Service Endpoint (lesser numeric SvcPriority) MUST have `ipv6only` and `mandatory=ipv6only` SvcParams. Its TargetName MUST only have DNS `AAAA` records and no DNS `A` records. By marking the highest priority Service Endpoint with `ipv6only` as `mandatory=ipv6only` we cause clients who do not understand the `ipv6only` SvcParamKey to ignore that ServiceMode record and move on to the next one.
-* The lower priority Service Endpoint (greater numeric SvcPriority) SHOULD have a `deprecated` SvcParam with an optional description. Its TargetName MUST be dual-stacked with both DNS `AAAA` records and `A` records.
+* The higher priority Alternative Endpoint (lesser numeric SvcPriority) MUST have `ipv6only` and `mandatory=ipv6only` SvcParams. Its TargetName MUST only have DNS `AAAA` records and no DNS `A` records. By marking the highest priority Alternative Endpoint with `ipv6only` as `mandatory=ipv6only` we cause clients who do not understand the `ipv6only` SvcParamKey to ignore that ServiceMode record and move on to the next one.
+* The lower priority Alternative Endpoint (greater numeric SvcPriority) SHOULD have a `deprecated` SvcParam with an optional description. Its TargetName MUST be dual-stacked with both DNS `AAAA` records and `A` records.
 * The fallback hostname MUST be dual-stacked with both DNS `AAAA` records and `A` records.
 
 For example:
@@ -190,14 +190,14 @@ For example:
 The `www.example.com` endpoint remains as dual-stacked with A and AAAA records for clients not understanding the `ipv6only` SvcParamKey.
 
 
-## Step Two: Removing Deprecated Service Endpoint
+## Step Two: Removing Deprecated Alternative Endpoint
 
 In the second step we remove the dual-stack service endpoint (and also make the fallback name dual-stack):
 
-* The remaining Service Endpoint MUST have an `ipv6only` SvcParams. It MUST NOT have the `mandatory=ipv6only` SvcParam, as this would cause clients not implementing the `ipv6only` SvcParam to have a Service Endpoint to use, even if they support IPv6. Its TargetName MUST only have DNS `AAAA` records and no DNS `A` records.
+* The remaining Alternative Endpoint MUST have an `ipv6only` SvcParams. It MUST NOT have the `mandatory=ipv6only` SvcParam, as this would cause clients not implementing the `ipv6only` SvcParam to have a Alternative Endpoint to use, even if they support IPv6. Its TargetName MUST only have DNS `AAAA` records and no DNS `A` records.
 * The fallback hostname MUST be IPv6-only with only DNS `AAAA` records and no `A` records.
 
-For example, to complete deprecation we remove the deprecated Service Endpoint:
+For example, to complete deprecation we remove the deprecated Alternative Endpoint:
 
 ~~~ dns
     www.example.com. 300 IN HTTPS 1 . ( ipv6hint=2001:db8::6 ipv6only )
@@ -209,7 +209,7 @@ At this point the service no longer has any IPv4 support.
 
 # Security Considerations
 
-Communications in the DNS are subject to inspection and modification unless DNSSEC and secure communication from the client to DNS resolver is used.
+Communications in the DNS are subject to inspection and modification unless DNSSEC and secure communication from the client to DNS resolver is used ({{SVCB}} Section 9.2.2).
 
 How this impacts this specification depends on the threat model for the environment, but for the `ipv6only` SvcParam an attacker who can exploit this could also likely block individual IPv4 or IPv6 flows and force fallback without this specification.
 
@@ -226,10 +226,10 @@ TBD
 
 The "Service Binding (SVCB) Parameter Registry" ({{IANA-SVCB}}) shall have the following SvcParam Keys added:
 
-| Number      | Name            | Meaning                                         | Format Reference               |
-| ----------- | ------          | ----------------------                          | ------------------------------ |
-| TBA         | ipv6only        | The endpoint is only available over IPv6        | (This document) {{ipv6only}}   |
-| TBA         | deprecated      | The endpoint is deprecated and may go away soon | (This document) {{deprecated}} |
+| Number      | Name            | Meaning                                         | Format Reference               | Change Controller |
+| ----------- | ------          | ----------------------                          | ------------------------------ | ----------------- |
+| TBA         | ipv6only        | The endpoint is only available over IPv6        | (This document) {{ipv6only}}   | IETF              |
+| TBA         | deprecated      | The endpoint is deprecated and may go away soon | (This document) {{deprecated}} | IETF              |
 
 
 _(TO BE REMOVED but potential considerations for assignment:

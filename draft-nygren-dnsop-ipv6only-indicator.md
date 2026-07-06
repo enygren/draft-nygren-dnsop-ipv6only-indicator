@@ -161,9 +161,9 @@ Clients MAY provide an indicator and SHOULD log a warning when using a Service E
 The `deprecated` SvcParamKey is generally usable outside of just the IPv4 deprecation context. For example it could be used to indicate that the default ALPN of `http/1.1` is deprecated and that only `alpn=h2,h3` will be supported going forwards:
 
 ~~~ example
-    svc.example. 300 IN SVCB 1 svc,modern.example. alpn="h2,h3" no-default-alpn
-    svc.example. 300 IN SVCB 2 svc.legacy.example. ( alpn="http/1.1"
-	                              deprecated="http/1.1 support will be retired soon" )
+    _foo.svc.example. 300 IN SVCB 1 svc.modern.example. alpn="h2,h3" no-default-alpn
+    _foo.svc.example. 300 IN SVCB 2 svc.legacy.example. ( alpn="http/1.1"
+                               deprecated="http/1.1 support will be retired soon" )
 ~~~
 
 
@@ -217,9 +217,9 @@ At this point the service no longer has any IPv4 support.
 
 # Security Considerations
 
-Communications in the DNS are subject to inspection and modification unless DNSSEC and secure communication from the client to DNS resolver is used ({{SVCB}} Section 9.2.2).
+Communications in the DNS are subject to inspection and modification unless DNSSEC and secure communication from the client to DNS resolver is used ({{SVCB}} Section 12).
 
-As discussed in {{SVCB}} Section 9.2.2 this could force the usage of a less secure Service Endpoint (such as one that is `deprecated`). Service operators SHOULD consider the security implications of continuing to run deprecated services, especially when these might increase their vulnerability footprint.
+As discussed in {{SVCB}} Section 12 this could force the usage of a less secure Service Endpoint (such as one that is `deprecated`). Service operators SHOULD consider the security implications of continuing to run deprecated services, especially when these might increase their vulnerability footprint.
 
 How this impacts this specification depends on the threat model for the environment, but for the `ipv6only` SvcParam an attacker who can exploit this could also likely block individual IPv4 or IPv6 flows and force fallback without this specification.
 

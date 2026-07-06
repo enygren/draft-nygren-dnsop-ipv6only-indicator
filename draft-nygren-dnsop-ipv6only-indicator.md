@@ -83,11 +83,9 @@ As an example, the following provides two Service Endpoints for `www.example.com
 
 Terminology used in this specification includes:
 
-* `Service Endpoint`: a ServiceMode SVCB (or SVCB-compatible) DNS RR alternative endpoint ({{!SVCB=RFC9460}}) that specifies how to access a service.
+* `Service Endpoint`: a ServiceMode SVCB (or SVCB-compatible) DNS RR ({{!SVCB=RFC9460}}) that specifies how to access a service. This corresponds to an "alternative endpoint" in {{SVCB}}.
 
 Additional DNS terminology intends to be consistent with {{?DNSTerm=RFC9499}}.
-
-_(TODO: Determine if we should use "alternative endpoint" from RFC 9460 in this draft rather than "Service Endpoint".)_
 
 
 # The "ipv6only" SvcParamKey {#ipv6only}
@@ -158,8 +156,18 @@ Clients SHOULD NOT provide special treatment to Service Endpoints due to the pre
 
 Clients MAY provide an indicator and SHOULD log a warning when using a Service Endpoint with `deprecated`.
 
+## Example usage of "deprecated" outside of IPv4 deprecation
 
-# Operational Usage
+The `deprecated` SvcParamKey is generally usable outside of just the IPv4 deprecation context. For example it could be used to indicate that the default ALPN of `http/1.1` is deprecated and that only `alpn=h2,h3` will be supported going forwards:
+
+~~~ example
+    svc.example. 300 IN SVCB 1 svc,modern.example. alpn="h2,h3" no-default-alpn
+    svc.example. 300 IN SVCB 2 svc.legacy.example. ( alpn="http/1.1"
+	                              deprecated="http/1.1 support will be retired soon" )
+~~~
+
+
+# Operational Usage for IPv4 Deprecation
 
 A typical operational workflow for using this will involve moving through a deprecation process of:
 
@@ -193,7 +201,7 @@ The `www.example.com` endpoint remains as dual-stacked with A and AAAA records f
 
 ## Step Two: Removing Deprecated Service Endpoint
 
-In the second step we remove the dual-stack Alernative Endpoint (and also make the fallback name IPv6-only):
+In the second step we remove the dual-stack Service Endpoint (and also make the fallback name IPv6-only):
 
 * The remaining Service Endpoint MUST have an `ipv6only` SvcParam. It MUST NOT have the `mandatory=ipv6only` SvcParam, as this would cause clients not implementing the `ipv6only` SvcParam to have a Service Endpoint to use, even if they support IPv6. Its TargetName MUST only have DNS `AAAA` records and no DNS `A` records.
 * The fallback hostname MUST be IPv6-only with only DNS `AAAA` records and no `A` records.
@@ -207,10 +215,11 @@ For example, to complete deprecation we remove the deprecated Service Endpoint:
 
 At this point the service no longer has any IPv4 support.
 
-
 # Security Considerations
 
 Communications in the DNS are subject to inspection and modification unless DNSSEC and secure communication from the client to DNS resolver is used ({{SVCB}} Section 9.2.2).
+
+As discussed in {{SVCB}} Section 9.2.2 this could force the usage of a less secure Service Endpoint (such as one that is `deprecated`). Service operators SHOULD consider the security implications of continuing to run deprecated services, especially when these might increase their vulnerability footprint.
 
 How this impacts this specification depends on the threat model for the environment, but for the `ipv6only` SvcParam an attacker who can exploit this could also likely block individual IPv4 or IPv6 flows and force fallback without this specification.
 
@@ -218,8 +227,9 @@ The free-form text provided with `deprecated` should be assumed to be coming fro
 
 # Privacy Considerations
 
-TBD
+Service operators should take into consideration that all information included as freeform text for `deprecated` is publicly available and thus should take care to not include sensitive or proprietary information.
 
+The presence of `ipv6only` influences client behavior so its presence adds an additional bit that could help fingerprint clients.
 
 # IANA Considerations
 

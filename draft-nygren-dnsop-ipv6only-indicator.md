@@ -23,6 +23,8 @@ author:
 
 normative:
 
+    RFC9460:
+
 informative:
 
   IANA-SVCB:
@@ -40,7 +42,7 @@ informative:
         org: CZ.NIC
     date: 2024-01
     target: https://endofipv4.cz/en/
-	
+
 --- abstract
 
 As the DNS is the primary mechanism for translating from hostnames to IP addresses, it is a logical place to signal that endpoints are IPv6-only. It is thus also a logical place to signal that legacy endpoints supporting IPv4 are being deprecated.  This specification introduces two SvcParams for SVCB-compatible RR types that signal IPv6-only endpoints (`ipv6only`) as well as deprecated endpoints (`deprecated`).
@@ -175,11 +177,11 @@ For example:
         ipv6hint=2001:db8::6 ipv6only mandatory=ipv6only )
                             HTTPS 2 legacy.example.net. (
         ipv6hint=2001:db8::64 ipv4hint=203.0.113.4
-		deprecated="IPv4 support to be removed prior to 2032-07-06" )
+        deprecated="IPv4 support to be removed prior to 2032-07-06" )
     www.example.com.    300 IN AAAA 2001:db8::64
     www.example.com.    300 IN A    203.0.113.4
-	modern.example.com. 300 IN AAAA 2001:db8::6
-    legacy.example.com. 300 IN CNAME www.example.com.	
+    modern.example.com. 300 IN AAAA 2001:db8::6
+    legacy.example.com. 300 IN CNAME www.example.com.
 ~~~
 
 The `www.example.com` endpoint remains as dual-stacked with A and AAAA records for clients not understanding the `ipv6only` SvcParamKey.
@@ -195,7 +197,7 @@ In the second step we remove the dual-stack service endpoint (and also make the 
 For example, to complete deprecation we remove the deprecated Service Endpoint:
 
 ~~~ dns
-    www.example.com. 300 IN HTTPS 1 . ( ipv6hint=2001:db8::6 ipv6only ) 
+    www.example.com. 300 IN HTTPS 1 . ( ipv6hint=2001:db8::6 ipv6only )
     www.example.com.    300 IN AAAA 2001:db8::6
 ~~~
 

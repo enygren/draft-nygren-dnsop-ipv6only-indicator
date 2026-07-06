@@ -1,0 +1,476 @@
+
+
+
+
+DNSOP                                                          E. Nygren
+Internet-Draft                                       Akamai Technologies
+Intended status: Standards Track                             6 July 2026
+Expires: 7 January 2027
+
+
+  Indicating IPv6-only SVCB Endpoints and IPv4 Deprecation in the DNS
+              draft-nygren-dnsop-ipv6only-indicator-latest
+
+Abstract
+
+   As the DNS is the primary mechanism for translating from hostnames to
+   IP addresses, it is a logical place to signal that endpoints are
+   IPv6-only.  It is thus also a logical place to signal that legacy
+   endpoints supporting IPv4 are being deprecated.  This specification
+   introduces two SvcParams for SVCB-compatible RR types that signal
+   IPv6-only endpoints (ipv6only) as well as deprecated endpoints
+   (deprecated).
+
+   TO BE REMOVED: This document is being collaborated on in Github at:
+   https://github.com/enygren/draft-nygren-dnsop-ipv6only-indicator
+   (https://github.com/enygren/draft-nygren-dnsop-ipv6only-indicator).
+   The most recent working version of the document, open issues, etc.
+   should all be available there.  The authors (gratefully) accept pull
+   requests.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 7 January 2027.
+
+Copyright Notice
+
+   Copyright (c) 2026 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction
+   2.  Conventions and Definitions
+   3.  The "ipv6only" SvcParamKey
+     3.1.  Client behavior for "ipv6only"
+     3.2.  Clients using a Proxy
+   4.  The "deprecated" SvcParamKey
+     4.1.  Presentation Format for "deprecated"
+     4.2.  Wire Format for "deprecated"
+     4.3.  Client behavior for "deprecated"
+     4.4.  Example usage of "deprecated" outside of IPv4 deprecation
+   5.  Operational Usage for IPv4 Deprecation
+     5.1.  Step One: Indicating Deprecation
+     5.2.  Step Two: Removing Deprecated Service Endpoint
+   6.  Security Considerations
+   7.  Privacy Considerations
+   8.  IANA Considerations
+     8.1.  Updates to IANA SvcParam Registry
+   9.  References
+     9.1.  Normative References
+     9.2.  Informative References
+   Appendix A.  Acknowledgments
+   Appendix B.  Change history
+   Author's Address
+
+1.  Introduction
+
+   This specification introduces the ipv6only and deprecated
+   SvcParamKeys to allow service providers to indicate that preferred
+   Service Endpoints are IPv6-only and that legacy IPv4-supporting
+   Service Endpoints are deprecated and will be retired.
+
+   As part of the multi-decade transition from IPv4 to IPv6 ([RFC8200])
+   there is a desire to phase out support for providing services over
+   IPv4.  This involves switching from the long-standing assumption that
+   all services are available over IPv4 or dual-stack IPv4+IPv6 to
+   instead being _only_ available over IPv6.  As clients lacking IPv6
+   connectivity will not be able to access IPv6-only resources, there
+   will be a transitional phase where service providers will want to
+   indicate that legacy endpoints supporting IPv4 are deprecated and
+   will go away at some point.
+
+   For example, the government of Czechia has set an end-date after
+   which government services may only be provided over IPv6 [KONECIPV4].
+   Leading up to this, there will be a need to signal that the IPv6-only
+   services are preferred and that legacy IPv4-supporting services are
+   deprecated.
+
+   In [SVCB], the SVCB ("Service Binding") and HTTPS DNS RR types are
+   specified to provide clients with complete instructions for accessing
+   a service.  Individual service bindings (SVCB RRs) describe Service
+   Endpoints and their properties and relative priorities.
+
+   By adding the ipv6only and deprecated SvcParamKeys, individual
+   Service Endpoints can be annotated to indicate their IPv6-only and
+   deprecated nature to clients.  It is expected that the deprecated
+   SvcParamKey may also be used for other future purposes.
+
+   As an example, the following provides two Service Endpoints for
+   www.example.com.  The preferred endpoint of modern.example.com (the
+   one with the lowest SvcPriority) is listed as ipv6only.  An
+   additional Service Endpoint of legacy.example.com is also available
+   but is listed as deprecated.  The optional use of mandatory=ipv6only
+   will cause clients not understanding the new ipv6only SvcParamKey to
+   ignore the modern IPv6-only endpoint and skip directly to the legacy
+   endpoint.
+
+       www.example.com. 300 IN HTTPS 1 modern.example.com. (
+           ipv6hint=2001:db8::6 ipv6only mandatory=ipv6only )
+                               HTTPS 2 legacy.example.com. (
+           ipv6hint=2001:db8::64 ipv4hint=203.0.113.4 deprecated )
+
+2.  Conventions and Definitions
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in
+   BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+   Terminology used in this specification includes:
+
+   *  Service Endpoint: a ServiceMode SVCB (or SVCB-compatible) DNS RR
+      ([SVCB]) that specifies how to access a service.  This corresponds
+      to an "alternative endpoint" in [SVCB].
+
+   Additional DNS terminology intends to be consistent with [DNSTerm].
+
+3.  The "ipv6only" SvcParamKey
+
+   The ipv6only SvcParamKey indicates that the associated Service
+   Endpoint is only available over IPv6.  It takes no value.
+
+   With ipv6only, the presentation and wire format values MUST be empty.
+
+   The ipv6only and ipv4hint SvcParamKeys SHOULD NOT be included in the
+   same SVCB RR.  When ipv6only is present, the ipv4hint SvcParam MUST
+   be ignored by clients.
+
+3.1.  Client behavior for "ipv6only"
+
+   Clients implementing the ipv6only SvcParamKey do the following when
+   encountering a SVCB RR with this SvcParam, as a modification to the
+   algorithm specified in [SVCB] Section 3:
+
+   1.  Clients SHOULD NOT perform an A DNS lookup for an IPv4 address
+       for the TargetName.  (It is possible that clients already
+       performed the A lookup or have one in their DNS cache, in which
+       case it MUST be ignored.)
+
+   2.  Clients MUST only attempt to connect to the Service Endpoint over
+       IPv6 and MUST NOT attempt to connect to the Service Endpoint over
+       IPv4.
+
+   3.  Clients who are certain that they have no IPv6 connectivity
+       SHOULD treat this Service Endpoint as not "compatible" ([SVCB]
+       Section 8) and not include it in their candidate list.
+
+   If the only Service Endpoints available have ipv6only, and if the
+   service has no DNS A record, the Client MAY present the user with a
+   notice that the service is only available over IPv6 and that the user
+   lacks IPv6 connectivity.
+
+   _(TODO: determine if "updates: 9460" is needed.)_
+
+3.2.  Clients using a Proxy
+
+   Clients using a domain-oriented transport proxy like HTTP CONNECT
+   ([RFC9110]) or SOCKS5 ([RFC1928]) with named destinations may not
+   know if their proxy supports IPv6 or only IPv4.
+
+   Clients lacking information about whether a Proxy supports IPv6
+   SHOULD opportunistically use Service Endpoints with ipv6only, but
+   MUST retry with subsequent Service Endpoints if this fails.  Clients
+   MAY use the [RFC9209] Proxy-Status response header field to get an
+   indication that a proxy is unable to reach a given target over IPv6
+   (such as looking for regular occurrences of
+   error=destination_ip_unroutable) but MUST NOT extrapolate this to
+   general IPv6 unreachability from the Proxy absent some other explicit
+   signal.
+
+4.  The "deprecated" SvcParamKey
+
+   The deprecated SvcParamKey indicates that the associated Service
+   Endpoint is deprecated.  It takes an optional value with a freeform
+   textual deprecation reason.
+
+   This text is NOT intended for automated processing, and clients MUST
+   NOT alter their connection behavior on the basis of its content
+   beyond treating the mere presence of the "deprecated" key as
+   advisory.
+
+   The deprecated SvcParam SHOULD always be on the lowest priority
+   Service Endpoints.
+
+4.1.  Presentation Format for "deprecated"
+
+   The presentation value of "deprecated" is OPTIONAL.  When present, it
+   follows the generic SvcParamValue presentation format defined in
+   Section 2.1 of [RFC9460].
+
+   If no value is given, the key appears with no reason text, e.g.:
+
+      www.example.com. 3600 IN HTTPS 2 legacy.example.com. deprecated
+
+   If a reason is given:
+
+      www.example.com. 3600 IN HTTPS 2 legacy.example.com. (
+         deprecated="IPv4 support to be removed prior to 2032-07-06" )
+
+4.2.  Wire Format for "deprecated"
+
+   In wire format, the SvcParamValue for "deprecated" consists of the
+   UTF-8 [RFC3629] encoding of the freeform reason text, with no
+   internal length, count, or type octets.  If no reason text is
+   present, the SvcParamValue is zero-length: the SvcParamKey appears
+   with a SvcParamValue length of 0, per the general wire format
+   described in Section 2.2 of [RFC9460].
+
+   Implementations MUST NOT assume any particular character encoding
+   beyond UTF-8, MUST NOT parse the value for embedded structure, and
+   SHOULD treat malformed UTF-8 by ignoring the value while still
+   honoring the mere presence of the key as an indication of
+   deprecation.
+
+4.3.  Client behavior for "deprecated"
+
+   The deprecated indicator is intended for operational uses and is not
+   intended to substantively impact general end-user behavior.
+
+   Clients SHOULD NOT provide special treatment to Service Endpoints due
+   to the presence of deprecated.
+
+   Clients MAY provide an indicator and SHOULD log a warning when using
+   a Service Endpoint with deprecated.
+
+4.4.  Example usage of "deprecated" outside of IPv4 deprecation
+
+   The deprecated SvcParamKey is generally usable outside of just the
+   IPv4 deprecation context.  For example it could be used to indicate
+   that the default ALPN of http/1.1 is deprecated and that only
+   alpn=h2,h3 will be supported going forwards:
+
+       _foo.svc.example. 300 IN SVCB 1 svc.modern.example. alpn="h2,h3" no-default-alpn
+       _foo.svc.example. 300 IN SVCB 2 svc.legacy.example. ( alpn="http/1.1"
+                                  deprecated="http/1.1 support will be retired soon" )
+
+5.  Operational Usage for IPv4 Deprecation
+
+   A typical operational workflow for using this will involve moving
+   through a deprecation process of:
+
+   1) Introducing both the ipv6only Service Endpoint and marking the
+   legacy Service Endpoint as deprecated. 2) Removing the deprecated
+   endpoint, leaving only the ipv6only Service Endpoint.
+
+5.1.  Step One: Indicating Deprecation
+
+   In the first step, the service is configured with at least two
+   ServiceMode Service Endpoints:
+
+   *  The higher priority Service Endpoint (lesser numeric SvcPriority)
+      MUST have ipv6only and mandatory=ipv6only SvcParams.  Its
+      TargetName MUST only have DNS AAAA records and no DNS A records.
+      By marking the highest priority Service Endpoint with ipv6only as
+      mandatory=ipv6only we cause clients who do not understand the
+      ipv6only SvcParamKey to ignore that ServiceMode record and move on
+      to the next one.
+
+   *  The lower priority Service Endpoint (greater numeric SvcPriority)
+      SHOULD have a deprecated SvcParam with an optional description.
+      Its TargetName MUST be dual-stacked with both DNS AAAA records and
+      A records.
+
+   *  The fallback hostname MUST be dual-stacked with both DNS AAAA
+      records and A records.
+
+   For example:
+
+       www.example.com. 300 IN HTTPS 1 modern.example.com. (
+           ipv6hint=2001:db8::6 ipv6only mandatory=ipv6only )
+                               HTTPS 2 legacy.example.com. (
+           ipv6hint=2001:db8::64 ipv4hint=203.0.113.4
+           deprecated="IPv4 support to be removed prior to 2032-07-06" )
+       www.example.com.    300 IN AAAA 2001:db8::64
+       www.example.com.    300 IN A    203.0.113.4
+       modern.example.com. 300 IN AAAA 2001:db8::6
+       legacy.example.com. 300 IN CNAME www.example.com.
+
+   The www.example.com endpoint remains as dual-stacked with A and AAAA
+   records for clients not understanding the ipv6only SvcParamKey.
+
+5.2.  Step Two: Removing Deprecated Service Endpoint
+
+   In the second step we remove the dual-stack Service Endpoint (and
+   also make the fallback name IPv6-only):
+
+   *  The remaining Service Endpoint MUST have an ipv6only SvcParam.  It
+      MUST NOT have the mandatory=ipv6only SvcParam, as this would cause
+      clients not implementing the ipv6only SvcParam to have a Service
+      Endpoint to use, even if they support IPv6.  Its TargetName MUST
+      only have DNS AAAA records and no DNS A records.
+
+   *  The fallback hostname MUST be IPv6-only with only DNS AAAA records
+      and no A records.
+
+   For example, to complete deprecation we remove the deprecated Service
+   Endpoint:
+
+       www.example.com. 300 IN HTTPS 1 . ( ipv6hint=2001:db8::6 ipv6only )
+       www.example.com.    300 IN AAAA 2001:db8::6
+
+   At this point the service no longer has any IPv4 support.
+
+6.  Security Considerations
+
+   Communications in the DNS are subject to inspection and modification
+   unless DNSSEC and secure communication from the client to DNS
+   resolver is used ([SVCB] Section 12).
+
+   As discussed in [SVCB] Section 12 this could force the usage of a
+   less secure Service Endpoint (such as one that is deprecated).
+   Service operators SHOULD consider the security implications of
+   continuing to run deprecated services, especially when these might
+   increase their vulnerability footprint.
+
+   How this impacts this specification depends on the threat model for
+   the environment, but for the ipv6only SvcParam an attacker who can
+   exploit this could also likely block individual IPv4 or IPv6 flows
+   and force fallback without this specification.
+
+   The free-form text provided with deprecated should be assumed to be
+   coming from a hostile source.  Clients MUST NOT present it to users
+   in a way that it could lead to confusion or be used for phishing or
+   other attacks.  Any logging of this provided text MUST assume that it
+   contains potential cross-site-scripting or prompt injection or other
+   malicious content and must escape and annotate it accordingly.
+
+7.  Privacy Considerations
+
+   Service operators should take into consideration that all information
+   included as freeform text for deprecated is publicly available and
+   thus should take care to not include sensitive or proprietary
+   information.
+
+   The presence of ipv6only influences client behavior so its presence
+   adds an additional bit that could help fingerprint clients.
+
+8.  IANA Considerations
+
+8.1.  Updates to IANA SvcParam Registry
+
+   The "Service Binding (SVCB) Parameter Registry" ([IANA-SVCB]) shall
+   have the following SvcParam Keys added:
+
+    +========+============+==================+===========+============+
+    | Number | Name       | Meaning          | Reference | Change     |
+    |        |            |                  |           | Controller |
+    +========+============+==================+===========+============+
+    | TBA    | ipv6only   | The endpoint is  | (This     | IETF       |
+    |        |            | only available   | document) |            |
+    |        |            | over IPv6        | Section 3 |            |
+    +--------+------------+------------------+-----------+------------+
+    | TBA    | deprecated | The endpoint is  | (This     | IETF       |
+    |        |            | deprecated and   | document) |            |
+    |        |            | may go away soon | Section 4 |            |
+    +--------+------------+------------------+-----------+------------+
+
+                                  Table 1
+
+   _(TO BE REMOVED but potential considerations for assignment: * A cute
+   assignment for ipv6only might be "864", with the meaning of "getting
+   rid of IPv4 due to running out". * Similarly, "86" might be a
+   memorable assignment for "deprecated"?)_
+
+9.  References
+
+9.1.  Normative References
+
+   [RFC1928]  Leech, M., Ganis, M., Lee, Y., Kuris, R., Koblas, D., and
+              L. Jones, "SOCKS Protocol Version 5", RFC 1928,
+              DOI 10.17487/RFC1928, March 1996,
+              <https://www.rfc-editor.org/rfc/rfc1928>.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/rfc/rfc2119>.
+
+   [RFC3629]  Yergeau, F., "UTF-8, a transformation format of ISO
+              10646", STD 63, RFC 3629, DOI 10.17487/RFC3629, November
+              2003, <https://www.rfc-editor.org/rfc/rfc3629>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
+
+   [RFC9110]  Fielding, R., Ed., Nottingham, M., Ed., and J. Reschke,
+              Ed., "HTTP Semantics", STD 97, RFC 9110,
+              DOI 10.17487/RFC9110, June 2022,
+              <https://www.rfc-editor.org/rfc/rfc9110>.
+
+   [RFC9460]  Schwartz, B., Bishop, M., and E. Nygren, "Service Binding
+              and Parameter Specification via the DNS (SVCB and HTTPS
+              Resource Records)", RFC 9460, DOI 10.17487/RFC9460,
+              November 2023, <https://www.rfc-editor.org/rfc/rfc9460>.
+
+   [SVCB]     Schwartz, B., Bishop, M., and E. Nygren, "Service Binding
+              and Parameter Specification via the DNS (SVCB and HTTPS
+              Resource Records)", RFC 9460, DOI 10.17487/RFC9460,
+              November 2023, <https://www.rfc-editor.org/rfc/rfc9460>.
+
+9.2.  Informative References
+
+   [DNSTerm]  Hoffman, P. and K. Fujiwara, "DNS Terminology", BCP 219,
+              RFC 9499, DOI 10.17487/RFC9499, March 2024,
+              <https://www.rfc-editor.org/rfc/rfc9499>.
+
+   [IANA-SVCB]
+              IANA, "Service Binding (SVCB) Parameter Registry",
+              <https://www.iana.org/assignments/dns-svcb/dns-
+              svcb.xhtml>.
+
+   [KONECIPV4]
+              CZ.NIC, "Czech Republic sets IPv4 end date", January 2024,
+              <https://endofipv4.cz/en/>.
+
+   [RFC8200]  Deering, S. and R. Hinden, "Internet Protocol, Version 6
+              (IPv6) Specification", STD 86, RFC 8200,
+              DOI 10.17487/RFC8200, July 2017,
+              <https://www.rfc-editor.org/rfc/rfc8200>.
+
+   [RFC9209]  Nottingham, M. and P. Sikora, "The Proxy-Status HTTP
+              Response Header Field", RFC 9209, DOI 10.17487/RFC9209,
+              June 2022, <https://www.rfc-editor.org/rfc/rfc9209>.
+
+Appendix A.  Acknowledgments
+
+   Thank you to ... for their feedback and suggestions on this draft.
+
+   Some of the initial thoughts around this go back to the IETF sunset4
+   working group, so additional thanks go to people who participated in
+   that work, as well as to others working towards the eventual
+   universal deprecation of IPv4.
+
+Appendix B.  Change history
+
+   (This section to be removed by the RFC editor.)
+
+Author's Address
+
+   Erik Nygren
+   Akamai Technologies
+   Email: erik+ietf@nygren.org

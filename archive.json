@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-07-07T02:23:48.574185+00:00",
+  "timestamp": "2026-07-09T02:10:20.402853+00:00",
   "repo": "enygren/draft-nygren-dnsop-ipv6only-indicator",
   "labels": [
     {
@@ -49,6 +49,23 @@
       "color": "ffffff"
     }
   ],
-  "issues": [],
+  "issues": [
+    {
+      "number": 1,
+      "id": "I_kwDOTOQvOM8AAAABH-bLBA",
+      "title": "Explain why Happy Eyeballs isn't good enough",
+      "url": "https://github.com/enygren/draft-nygren-dnsop-ipv6only-indicator/issues/1",
+      "state": "OPEN",
+      "author": "enygren",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "Initial feedback (eg, from Jan Schaumann and Daniel Stenberg) is that it isn't clear why Happy Eyeballs isn't good enough.\n\nI agree the draft isn't clear on this, and even as the author I share this concern.\n\n\n====================================================\n\nFrom: https://mastodon.social/@bagder/116877328366954848 (Daniel Stenberg, lead developer of curl):\n@nygren@hachyderm.io @ietf_wg_dnsop@hachyderm.io modern clients supporting this are also the most likely to already do happy eyeballs and should already handle ipv6 only hosts just fine...\n\nFrom: https://chaos.social/@icing/116877374186732839\nYeah, I think I understand the intention behind this, eg a CDN offloading its ipv4 endpoints over time, but\n\n- non happy eyeballing clients will not see this\n- HE clients already give high preference to ipv6\n- telling clients they MUST NOT use ipv4, although the records are there and ipv6 hasn\u2018t responded yet, is silly. It will not be obeyed.\ud83d\udc81\ud83c\udffb\u200d\u2642\ufe0f\n\n==============================================\n\nFrom Jan Schaumann:\n\nI have to admit that my experience so far with the\nadoption of SVCB and HTTPS records makes me wonder\nwhether this will be a practically useful approach.\n\nRight now, browsers[1] are racing all three lookups\n(HTTPS, A, and AAAA), and any findings from HTTPS\nrecords are, if supported or implemented by browsers\nat all, advisory at best.\n\nFrom a browser (or happy eyeballs) perspective, that\nmakes sense: waiting for the HTTPS result before then\nhaving to possibly do another two sequential lookups\nleads to a bad user experience.\n\nBut that also means that the \"ipv6only\" param would\nnot be particularly useful in practice so long as\nbrowsers still race the A and AAAA lookups.  I\nanticipate browsers will continue to do that for as\nlong as IPv4 and IPv6 records are both widely\nused[2].\n\nAs for the \"deprecated\" param, I also don't quite know\nwhat I am to do with it when I observe it, given that\nI \"SHOULD NOT provide special treatment\".\n\nI fear that the idea behind the proposal (\"make it\neasier for people to migrate off IPv4 and to\nIPv6-only\") is a solution in search of a problem: I'm\nnot convinced the technical ability to migrate is\nhampered by the lack of a method to signal to clients\nyour intention; what's missing is the intention to\nmigrate.\n\n\nAs an entirely naive alternative, I would expect an\nIPv6-only service to be one that has only AAAA records\n(and includes ipv6hint params, but no ipv4hint params\nin any SVCB records, which browsers may or may not\nrace at the same time).\n\nPerhaps it would be useful to include in the draft a\nbrief description why that is insufficient and whether\nthe anticipation is that browsers will (eventually)\n_not_ race HTTPS and A/AAAA lookups but _only_ use\nHTTPS lookups (or use those as blocking prior to any\nA/AAAA lookups).\n\nSorry, this got longer than I initially set out to.\n\n-Jan\n\n[1] And it really is browsers we have to care about\nhere, since those are effectively setting much of the\ndirection of the Web.\n\n[2] Which, in turn, I anticipate to remain the case\nthroughout the rest of my lifetime, at least.",
+      "createdAt": "2026-07-07T16:01:20Z",
+      "updatedAt": "2026-07-07T16:01:20Z",
+      "closedAt": null,
+      "comments": []
+    }
+  ],
   "pulls": []
 }
